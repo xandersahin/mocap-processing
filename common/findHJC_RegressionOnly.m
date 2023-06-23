@@ -22,8 +22,8 @@ function [] = findHJC_RegressionOnly(trialNames,outputPath)
 %file and folder naming    
 % userDir = getuserdir ;
 % tempOutputPath = [userDir '\Temp\Sub' num2str(round(rand*1000000)) '\'] ;
-finalFolderName = '\TRCs_w_HJCs\';
-outputPathFull = [outputPath,finalFolderName] 
+finalFolderName = '\TRCs_w_HJCs';
+outputPathFull = [outputPath,finalFolderName]; 
 
 %Select files to which the HJC locations should be added (multiple must be
 %selected).  The same directory will be used to create a file for new files
@@ -31,7 +31,7 @@ outputPathFull = [outputPath,finalFolderName]
 files = trialNames.trials ;
 directory = trialNames.basepath ;
 
-files=strvcat(files(:,:));
+% files=strvcat(files(:,:));
 
 if length(files)==1;
     display('No Files Selected to Write HJC.  Try Again.');
@@ -39,37 +39,36 @@ if length(files)==1;
 end
 
 directory=strvcat(directory);
-infile=files(1,:); inpath=directory;
+% infile=files(1,:); 
+inpath=directory;
 
 
 %Reformat file list and directory information
 
-[a b]=size(files);
+[a b]=size(trialNames.trials);
 write_directory=outputPathFull;
 
 %read each *.trc file and append HJC markers
-for j=1:a;
-    infile=files(j,:);
+for j=1:b;
+    infile=files{j};
     inpath=directory;
     x=0; mnames=0; tx=0; marks=0; time=0;
-    [x,tx,sfx,nsx,nmrk,mnames,file,inpath]=load_trc(['\' infile],inpath);   
+    [x,tx,sfx,nsx,nmrk,mnames,file,inpath]=load_trc(['\' infile '.trc'],inpath);   
     
     %compute time from the sampling frequency
     [a,b]=size(x);
     for i=1:a;
         time(i,1)=i/sfx-1/sfx;
     end
-    nfile=strcat(files(j,:));
-    filen=nfile(1,1:(length(nfile)-4));
      
     % Add regression based HJCs
     mrknames=char([mnames;cellstr('RHJC');cellstr('LHJC')]);     
     [datanew] = regressionHJC(mnames,x);
     mrkdata = [x,datanew];
 
-    done = writeTRCFile(time,mrkdata,mrknames,write_directory,filen);
+    done = writeTRCFile(time,mrkdata,mrknames,write_directory,infile);
     if done==1
-         display(['File ' infile ' written with HJC locations']);
+         display(['File ' infile '_w_HJCs.trc' ' written with HJC locations']);
     end
     
 end
@@ -110,7 +109,7 @@ function [pos,time,f,n,nmrk,mrk_names,file,inpath]=load_trc(infile,inpath)
 %   MATLAB Version 7.1
 
 n = nargin;
-if (n==0)
+if (n==0);
     [infile, inpath]=uigetfile('*.trc','Select input file');
     if infile==0
         f='';
@@ -122,10 +121,10 @@ if (n==0)
     end
     fid=fopen([inpath infile],'r');
     file = infile(1:length(infile)-4);
-elseif (n==1)
+elseif (n==1);
     file = infile(1:length(infile)-4);
     fid=fopen(infile,'r');
-else (n==1)
+else (n==1);
     file = infile(1:length(infile)-4);
     fid=fopen([inpath infile],'r');
 end
@@ -231,8 +230,7 @@ T=time(2)-time(1);
 f=1/T;
 [mk,nk]=size(mrkdata);
 nk=nk/3;
-% fid = fopen([directory,'/',file,'.trc'],'w');
-fid = fopen([directory,'/',file],'w');
+fid = fopen([directory,'\',file,'_w_HJCs.trc'],'w');
 fprintf(fid,'PathFileType  4	(X/Y/Z) %s\n',directory);
 fprintf(fid,'DataRate	CameraRate	NumFrames	NumMarkers	Units	OrigDataRate	OrigDataStartFrame	OrigNumFrames\n');
 fprintf(fid,'%7.1f	\t%7.1f	\t%7d	\t%7d	\t mm	%7.1f	%7d	%7d\n',f,f,mk,nk,f,1,mk);
