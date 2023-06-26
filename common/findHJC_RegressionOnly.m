@@ -201,7 +201,7 @@ else
     time=time(1:n,1);
 end
 % Return the position data in m
-pos=pos/1000;
+% pos=pos/1000;
 
 % Check if number of markers and data columns is the same
 
@@ -286,10 +286,10 @@ inds.R_PSIS = (strmatch(pelvisMarkNames{2},mkrNames)-1)*3+1 ;
 inds.L_ASIS = (strmatch(pelvisMarkNames{3},mkrNames)-1)*3+1 ;
 inds.L_PSIS = (strmatch(pelvisMarkNames{4},mkrNames)-1)*3+1 ;
 
-L_PSIS = data(:,inds.L_PSIS:inds.L_PSIS+2)*1000;
-R_PSIS = data(:,inds.R_PSIS:inds.R_PSIS+2)*1000;
-L_ASIS = data(:,inds.L_ASIS:inds.L_ASIS+2)*1000;
-R_ASIS = data(:,inds.R_ASIS:inds.R_ASIS+2)*1000;
+L_PSIS = data(:,inds.L_PSIS:inds.L_PSIS+2);
+R_PSIS = data(:,inds.R_PSIS:inds.R_PSIS+2);
+L_ASIS = data(:,inds.L_ASIS:inds.L_ASIS+2);
+R_ASIS = data(:,inds.R_ASIS:inds.R_ASIS+2);
 
 [nrows,ncolumns] = size(L_ASIS);
 
@@ -321,7 +321,7 @@ for ii = 1:nrows
         + (-0.3*PW-10.9)*y ...
         + (-0.33*PW+7.3)*z;
 end
-datanew = [R_HJC L_HJC]/1000;
+datanew = [R_HJC L_HJC];
 % headernew = header;
 % headernew.markername = horzcat(header.markername,...
 %     {'RHJC_reg','','','LHJC_reg','',''});
