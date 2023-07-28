@@ -4,8 +4,9 @@ function [] = offsetMarkers6mm(trialNames,outputPath)
 %file and folder naming    
 % userDir = getuserdir ;
 % tempOutputPath = [userDir '\Temp\Sub' num2str(round(rand*1000000)) '\'] ;
-finalFolderName = '\TRCs_w_HJCs_offset';
-outputPathFull = [outputPath,finalFolderName]; 
+% finalFolderName = '\TRCs_w_HJCs_offset';
+% outputPathFull = [outputPath,finalFolderName]; 
+outputPathFull = outputPath;
 
 %Select files to which the HJC locations should be added (multiple must be
 %selected).  The same directory will be used to create a file for new files
@@ -15,10 +16,10 @@ directory = trialNames.basepath ;
 
 % files=strvcat(files(:,:));
 
-if length(files)==1;
-    display('No Files Selected to offset markers.  Try Again.');
-    return;
-end
+% if length(files)==1;
+%     display('No Files Selected to offset markers.  Try Again.');
+%     return;
+% end
 
 directory=strvcat(directory);
 % infile=files(1,:); 
@@ -35,7 +36,7 @@ for j=1:b;
     infile=files{j};
     inpath=directory;
     x=0; mnames=0; tx=0; marks=0; time=0;
-    [x,tx,sfx,nsx,nmrk,mnames,file,inpath]=load_trc(['\' infile '.trc'],inpath);   
+    [x,tx,sfx,nsx,nmrk,mnames,file,inpath]=load_trc(['\' infile '_w_HJCs.trc'],inpath);   
     
     %compute time from the sampling frequency
     [a,b]=size(x);
@@ -236,7 +237,7 @@ T=time(2)-time(1);
 f=1/T;
 [mk,nk]=size(mrkdata);
 nk=nk/3;
-fid = fopen([directory,'\',file,'_offset.trc'],'w');
+fid = fopen([directory,'\',file,'.trc'],'w');
 fprintf(fid,'PathFileType  4	(X/Y/Z) %s\n',directory);
 fprintf(fid,'DataRate	CameraRate	NumFrames	NumMarkers	Units	OrigDataRate	OrigDataStartFrame	OrigNumFrames\n');
 fprintf(fid,'%7.1f	\t%7.1f	\t%7d	\t%7d	\t mm	%7.1f	%7d	%7d\n',f,f,mk,nk,f,1,mk);

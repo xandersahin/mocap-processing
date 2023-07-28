@@ -4,8 +4,8 @@ function [] = offsetMarkers6mm(trialNames,outputPath)
 %file and folder naming    
 % userDir = getuserdir ;
 % tempOutputPath = [userDir '\Temp\Sub' num2str(round(rand*1000000)) '\'] ;
-finalFolderName = '\TRCs_w_HJCs_offset';
-outputPathFull = [outputPath,finalFolderName]; 
+finalFolderName = '\ProcessedTRCs';
+outputPathFull = [outputPath]; 
 
 %Select files to which the HJC locations should be added (multiple must be
 %selected).  The same directory will be used to create a file for new files
@@ -35,7 +35,7 @@ for j=1:b;
     infile=files{j};
     inpath=directory;
     x=0; mnames=0; tx=0; marks=0; time=0;
-    [x,tx,sfx,nsx,nmrk,mnames,file,inpath]=load_trc(['\' infile '.trc'],inpath);   
+    [x,tx,sfx,nsx,nmrk,mnames,file,inpath]=load_trc(['\' infile '_w_HJCs.trc'],inpath);   
     
     %compute time from the sampling frequency
     [a,b]=size(x);
@@ -44,39 +44,37 @@ for j=1:b;
     end
      
     % Add regression based HJCs
-    mrknames= {'C7'; 'CLAV'; 'RSHO'; 'LSHO'; 'RASI'; 'LASI'; 'RPSI'; 'LPSI';  
-                     'RKNE'; 'RMKN'; 'RANK'; 'RMED'; 'RTOE'; 'RHEE';
-                     'LKNE'; 'LMKN'; 'LANK'; 'LMED'; 'LTOE'; 'LHEE';
-                     'RELB'; 'LELB'; 'RWRA'; 'LWRA'; 'RWRB'; 'LWRB';
-                     'RTHI'; 'LTHI'; 'RTIB'; 'RUPA'; 'RFRM'; 'RHJC';
-                                     'LTIB'; 'LUPA'; 'LFRM'; 'LHJC'};
 
-    mrknames= {'C7'; 'CLAV'; 
-             'RHEE'; 'LHEE';
-             'RTOE'; 'LTOE';
+    mrknames= {'C7'; 'CLAV';
+             'RSHO'; 'LSHO';
+             'RUPA'; 'LUPA';
+             'RFRM'; 'LFRM';
+             'RELB'; 'LELB';
+             'RWRA'; 'LWRA';
+             'RWRB'; 'LWRB';
              'RHJC'; 'LHJC';
              'RASI'; 'LASI';
              'RPSI'; 'LPSI';
              'RTHI'; 'LTHI';
              'RKNE'; 'LKNE';
              'RMKN'; 'LMKN';
+             'RTIB'; 'LTIB';
              'RANK'; 'LANK';
-             'RMED'; 'LMED'; 
-            
-
-    'RSHO'; 'LSHO';  
+             'RMED'; 'LMED';
+             'RHEE'; 'LHEE';
+             'RTOE'; 'LTOE'};
+             
                           
                           
-                     'RELB'; 'LELB'; 'RWRA'; 'LWRA'; 'RWRB'; 'LWRB';
-                      'RTIB'; 'RUPA'; 'RFRM'; 'RHJC';
-                                     'LTIB'; 'LUPA'; 'LFRM'; 'LHJC'};
+                        
+              
 
-    [datanew] = subtract6mm(mnames,x);
+    [datanew] = subtract6mm(mnames,x,infile);
     mrkdata = datanew;
 
     done = writeTRCFile(time,mrkdata,mrknames,write_directory,infile);
     if done==1
-         display(['File ' infile '_offset.trc' ' written with offset']);
+         display(['File ' infile ' written with offset']);
     end
     
 end
@@ -238,7 +236,7 @@ T=time(2)-time(1);
 f=1/T;
 [mk,nk]=size(mrkdata);
 nk=nk/3;
-fid = fopen([directory,'\',file,'_offset.trc'],'w');
+fid = fopen([directory,'\',file,'.trc'],'w');
 fprintf(fid,'PathFileType  4	(X/Y/Z) %s\n',directory);
 fprintf(fid,'DataRate	CameraRate	NumFrames	NumMarkers	Units	OrigDataRate	OrigDataStartFrame	OrigNumFrames\n');
 fprintf(fid,'%7.1f	\t%7.1f	\t%7d	\t%7d	\t mm	%7.1f	%7d	%7d\n',f,f,mk,nk,f,1,mk);
@@ -274,7 +272,7 @@ end
 
 %-------------------------------------------------------------------------%
 
-function [datanew] = subtract6mm(mkrNames,data)
+function [datanew] = subtract6mm(mkrNames,data,infile)
 %This code can be used to calculate hip joint centers based on the methods
 %in Harrington et al, 2007 (J Biomech)
 %Written by Cara Welker and Scott Uhlrich
@@ -283,31 +281,32 @@ function [datanew] = subtract6mm(mkrNames,data)
 % [filename,fileDir]=uigetfile([basedir '*.trc'],'Select Trial');
 % addpath(genpath('W:\OA_GaitRetraining\Matlab\common')) ;
 
-pelvisMarkNames = {'RASI','RPSI','LASI','LPSI'} ;
 % 
 % [header data] = TRCload([fileDir filename]) ;
 
 [timesteps,nmars] = size(data(1:end,:));
 %marker indices
-inds.R_ASIS = (strmatch(pelvisMarkNames{1},mkrNames)-1)*3+1 ;
-inds.R_PSIS = (strmatch(pelvisMarkNames{2},mkrNames)-1)*3+1 ;
-inds.L_ASIS = (strmatch(pelvisMarkNames{3},mkrNames)-1)*3+1 ;
-inds.L_PSIS = (strmatch(pelvisMarkNames{4},mkrNames)-1)*3+1 ;
-
-L_PSIS = data(:,inds.L_PSIS:inds.L_PSIS+2);
-R_PSIS = data(:,inds.R_PSIS:inds.R_PSIS+2);
-L_ASIS = data(:,inds.L_ASIS:inds.L_ASIS+2);
-R_ASIS = data(:,inds.R_ASIS:inds.R_ASIS+2);
-
-[nrows,ncolumns] = size(L_ASIS);
 
 
-finalMarkerNames = {'C7'; 'CLAV'; 'RSHO'; 'LSHO'; 'RASI'; 'LASI'; 'RPSI'; 'LPSI';  
-                          'RKNE'; 'RMKN'; 'RANK'; 'RMED'; 'RTOE'; 'RHEE';
-                          'LKNE'; 'LMKN'; 'LANK'; 'LMED'; 'LTOE'; 'LHEE';
-                          'RELB'; 'LELB'; 'RWRA'; 'LWRA'; 'RWRB'; 'LWRB';
-                          'RTHI'; 'LTHI'; 'RTIB'; 'RUPA'; 'RFRM'; 'RHJC';
-                                          'LTIB'; 'LUPA'; 'LFRM'; 'LHJC'};
+
+finalMarkerNames = {'C7'; 'CLAV';
+             'RSHO'; 'LSHO';
+             'RUPA'; 'LUPA';
+             'RFRM'; 'LFRM';
+             'RELB'; 'LELB';
+             'RWRA'; 'LWRA';
+             'RWRB'; 'LWRB';
+             'RHJC'; 'LHJC';
+             'RASI'; 'LASI';
+             'RPSI'; 'LPSI';
+             'RTHI'; 'LTHI';
+             'RKNE'; 'LKNE';
+             'RMKN'; 'LMKN';
+             'RTIB'; 'LTIB';
+             'RANK'; 'LANK';
+             'RMED'; 'LMED';
+             'RHEE'; 'LHEE';
+             'RTOE'; 'LTOE'};
 
 %marker indices
 inds.C7 = (strmatch('C7',mkrNames)-1)*3+1;
@@ -324,6 +323,7 @@ for i = 1:36
         datanew(:,3*i-1) = datanew(:,3*i-1) - 6;
     else 
         datanew(:,3*i-2:3*i) = NaN;
+        display(['File ' infile '.trc' ' is missing marker ' finalMarkerNames{i}]);
     end
 
 end %for loop

@@ -22,8 +22,7 @@ function [] = findHJC_RegressionOnly(trialNames,outputPath)
 %file and folder naming    
 % userDir = getuserdir ;
 % tempOutputPath = [userDir '\Temp\Sub' num2str(round(rand*1000000)) '\'] ;
-finalFolderName = '\TRCs_w_HJCs';
-outputPathFull = [outputPath,finalFolderName]; 
+outputPathFull = [outputPath]; 
 
 %Select files to which the HJC locations should be added (multiple must be
 %selected).  The same directory will be used to create a file for new files
@@ -33,10 +32,10 @@ directory = trialNames.basepath ;
 
 % files=strvcat(files(:,:));
 
-if length(files)==1;
-    display('No Files Selected to Write HJC.  Try Again.');
-    return;
-end
+% if length(files)==1;
+%     display('No Files Selected to Write HJC.  Try Again.');
+%     return;
+% end
 
 directory=strvcat(directory);
 % infile=files(1,:); 
