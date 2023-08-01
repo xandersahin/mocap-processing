@@ -10,7 +10,7 @@ import org.opensim.modeling.*
 %             'S1027'; 'S1029'; 'S1033'; 'S1034'; 'S1035'; 'S1039'; 'S1040';
 %             'S1044'; 'S1047'; 'S1049'; 'S1051'; 'S1052'; 'S1053'; 'S1054'};
 
-subjects = {'S0977'};
+subjects = {'S0'};
 
 basedir = 'I:\Shared drives\HPL_MASPL\ProcessedData\' ;
 
@@ -86,13 +86,13 @@ for sub = 1:length(subjects)
 
         % prep structure for HJC and Offset functions
         TN.basepath = results_folder;
-        TN.trials = name;
+        TN.trials = {name};
 
         % compute HJCs
-        findHJC_RegressionOnly(TN,results_folder)
+        findHJC_RegressionOnly(TN,results_folder);
 
         %trim unnecessary markers and subtract 6mm from all markers 
-        offsetMarkers6mm(TN,[subjectdir 'ProcessedTRCs\')
+        offsetMarkers6mm(TN,[subjectdir, 'ProcessedMARKERS']);
 
     end
 end
