@@ -32,10 +32,19 @@ clc; clear
 % Pull in the modeling classes straight from the OpenSim distribution
 import org.opensim.modeling.*
 
-subjects = [1:10] ;
-basedir = 'W:\OA_GaitRetraining\GastrocAvoidance\DATA\' ;
-modelName = 'ArmlessRajagopal_40_abdChg_passiveCalib_KneesMoved_scaled.osim' ;
-batchIKSettingsFileName = 'W:\OA_GaitRetraining\GastrocAvoidance\OpenSim\Setup_IK_generic.xml' ;
+% subjects = {'S0977'; 'S0978'; 'S0980'; 'S0981'; 'S0985'; 'S0989'; 'S0991'; 
+%             'S0993'; 'S0995'; 'S0998'; 'S0999'; 'S1001'; 'S1002'; 'S1003';
+%             'S1004'; 'S1005'; 'S1007'; 'S1009'; 'S1011'; 'S1012'; 'S1017';
+%             'S1018'; 'S1019'; 'S1020'; 'S1022'; 'S1023'; 'S1024'; 'S1025';
+%             'S1027'; 'S1029'; 'S1033'; 'S1034'; 'S1035'; 'S1039'; 'S1040';
+%             'S1044'; 'S1047'; 'S1049'; 'S1051'; 'S1052'; 'S1053'; 'S1054'};
+
+subjects = {'S1003'};
+
+basedir = 'I:\Shared drives\HPL_MASPL\ProcessedData\' ;
+
+modelName = 'LaiUhlrich2022_marked.osim' ;
+batchIKSettingsFileName = 'C:\MyRepositories_Xander\opencap-core_ACL\opensimPipeline\IK\Setup_IK_Vicon.xml' ;
 
 for sub = 1:length(subjects)
     subject = subjects(sub) ;
@@ -43,23 +52,23 @@ for sub = 1:length(subjects)
 
     % move to directory where this subject's files are kept
     % subjectdir = uigetdir('W:\OA_GaitRetraining\GastrocAvoidance\DATA\', 'Select the folder that contains the current subject data');
-    subjectdir = [basedir 'Subject' num2str(subject) '\'] ;
+    subjectdir = [basedir subject '\'] ;
 
     % Go to the folder in the subject's folder where .trc files are
-    trc_data_folder = [subjectdir '\Edited\Files_W_HJCs\'] ;
-    names = dir(fullfile(trc_data_folder, 'walking_*.trc')) ;
+    trc_data_folder = [subjectdir '\ProcessedMARKERS\'] ;
+    names = dir(fullfile(trc_data_folder, '*.trc')) ;
     trialsForIK = {names(:).name} ;
     nTrials = length(trialsForIK);
     
     % specify where results will be printed.
-    results_folder = ([subjectdir 'OpenSim\IK\KneesMoved\']);
+    results_folder = ([subjectdir '\IK\']);
 
     % Get and operate on the files
     % Choose a generic setup file to work from
     ikTool = InverseKinematicsTool(batchIKSettingsFileName);
     % Get the model
     % Load the model and initialize
-    model = Model([subjectdir 'OpenSim\Models\' modelName]);
+    model = Model([subjectdir modelName]);
     model.initSystem();
 
     % Tell Tool to use the loaded model

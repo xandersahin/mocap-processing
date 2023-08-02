@@ -1,4 +1,3 @@
-
 % ----------------------------------------------------------------------- %
 % The OpenSim API is a toolkit for musculoskeletal modeling and           %
 % simulation. See http://opensim.stanford.edu and the NOTICE file         %
@@ -29,13 +28,19 @@
 % To see the results load the model and ik output in the GUI.
 clc; clear
 
+% pause(1*60*60)
+
 % Pull in the modeling classes straight from the OpenSim distribution
 import org.opensim.modeling.*
 
-subjects = [1:10] ;
+subjects = [1] ;
 basedir = 'W:\OA_GaitRetraining\GastrocAvoidance\DATA\' ;
 modelName = 'ArmlessRajagopal_40_abdChg_passiveCalib_KneesMoved_scaled.osim' ;
-batchIKSettingsFileName = 'W:\OA_GaitRetraining\GastrocAvoidance\OpenSim\Setup_IK_generic.xml' ;
+genericIKSettingsFileName = 'W:\OA_GaitRetraining\GastrocAvoidance\OpenSim\Setup_ID_generic.xml' ;
+genericExternalLoadsFileName = 'W:\OA_GaitRetraining\GastrocAvoidance\OpenSim\ExternalLoads_generic.xml' ;
+IKfiltFreq = 6 ; % original trials at 6Hz
+
+addpath(genpath('\common\')) ;
 
 for sub = 1:length(subjects)
     subject = subjects(sub) ;
@@ -46,78 +51,78 @@ for sub = 1:length(subjects)
     subjectdir = [basedir 'Subject' num2str(subject) '\'] ;
 
     % Go to the folder in the subject's folder where .trc files are
-    trc_data_folder = [subjectdir '\Edited\Files_W_HJCs\'] ;
+    trc_data_folder = [subjectdir 'Edited\Files_W_HJCs\'] ;
     names = dir(fullfile(trc_data_folder, 'walking_*.trc')) ;
-    trialsForIK = {names(:).name} ;
-    nTrials = length(trialsForIK);
+    trialsForID = {names(:).name} ;
+    nTrials = length(trialsForID);
+    
+    % Folder with GRF files
+    GRF_data_folder = [subjectdir 'Edited\'] ;
+
+    % Folder with IK files
+    coord_data_folder = [subjectdir 'OpenSim\IK\KneesMoved\'] ;
     
     % specify where results will be printed.
-    results_folder = ([subjectdir 'OpenSim\IK\KneesMoved\']);
-
-    % Get and operate on the files
-    % Choose a generic setup file to work from
-    ikTool = InverseKinematicsTool(batchIKSettingsFileName);
-    % Get the model
-    % Load the model and initialize
-    model = Model([subjectdir 'OpenSim\Models\' modelName]);
-    model.initSystem();
-
-    % Tell Tool to use the loaded model
-    ikTool.setModel(model);
+    results_folder_base = ([subjectdir 'OpenSim\ID\KneesMoved6Hz\']);
 
     % Loop through the trials
     for trial= 1:nTrials;
-
-        %Generic setup file to work from
-        %ikTool = InverseKinematicsTool(['S:\Human Performance Lab\MotionAnalysis\OpenSim Models and Files\Generic_ACL_IKSetup_report_markers.xml']);
-        %model = Model([modelFilePath modelFile]);
-        %model.initSystem();
-        %ikTool.setModel(model);
+        
+        % Get and operate on the files
+        % Choose a generic setup file to work from
+        idTool = InverseDynamicsTool([genericIKSettingsFileName]);
+        % Get the model
+        % Load the model and initialize
+        model = Model([subjectdir 'OpenSim\Models\' modelName]);
+        model.initSystem();
+        
+        % Tell Tool to use the loaded model
+        idTool.setModelFileName([subjectdir 'OpenSim\Models\' modelName]);
+        idTool.setModel(model);
 
         % Get the name of the file for this trial
-        markerFile = trialsForIK{trial};
+        markerFile = trialsForID{trial};
 
         % Create name of trial from .trc file name
         name = markerFile(1:end-4) ;
         fullpath = [trc_data_folder markerFile] ;
-
+        
+        % Set Results Folder
+        results_folder = [results_folder_base name '\'] ;
+                
         % Get trc data to determine time range
         markerData = MarkerData(fullpath);
 
         % Get initial and final time 
         initial_time = markerData.getStartFrameTime();
         final_time = markerData.getLastFrameTime();
+        
+        % Write ExternalLoads file
+        thisExternalLoads = ExternalLoads(genericExternalLoadsFileName,true);
+        thisExternalLoads.setDataFileName(char([GRF_data_folder name '_forces.mot'])) ;
+        thisExternalLoads.setExternalLoadsModelKinematicsFileName(char([coord_data_folder name '\output\results_ik.sto']));
+        thisExternalLoads.print([results_folder '\externalLoads_' name '.xml']) ;        
 
-        % Setup the ikTool for this trial
-        ikTool.setName(name);
-        ikTool.setMarkerDataFileName(fullpath);
-        ikTool.setStartTime(initial_time);
-        ikTool.setEndTime(final_time);
-        ikTool.setOutputMotionFileName([results_folder name '\output\results_ik.sto']);
-        ikTool.setResultsDir([results_folder name '\output\']);
-
+        
+        % Setup the idTool for this trial
+        idTool.setName(name);
+        % idTool.setMarkerDataFileName(fullpath);
+        idTool.setStartTime(initial_time);
+        idTool.setEndTime(final_time);
+        idTool.setCoordinatesFileName([coord_data_folder name '\output\results_ik.sto']);
+        idTool.setExternalLoadsFileName([results_folder 'externalLoads_' name '.xml']);
+        idTool.setOutputGenForceFileName('results_id.sto');
+        idTool.setResultsDir([results_folder 'output\']);
+        idTool.setLowpassCutoffFrequency(IKfiltFreq) ;
+    
         % Save the settings in a setup file
-        outfile = ['Setup_IK_' name '.xml'];
-        try
-            ikTool.print([results_folder name '\' outfile]);
-        catch
-            mkdir([results_folder name])
-            ikTool.print([results_folder name '\' outfile]);
-        end
-        warning off
-        mkdir([results_folder name '\output\'])
-        warning on
+        outfile = ['Setup_ID_' name '.xml'];
+        idTool.print([results_folder '\' outfile]);
+        
+        fprintf(['Performing ID on cycle # ' num2str(trial) ' ' name '\n']);
+        % Run ID
+        idTool.run();
 
-        fprintf(['Performing IK on ' name '\n']);
-        % Run IK
-         ikTool.run();
-
-        %Give unique name to marker location .sto file (if set to 'true' in
-        %setup file)
-%         movefile([name '_ik_model_marker_locations.sto'],[results_folder name '\output\ik_model_marker_locations.sto'])
-%         movefile([name '_ik_marker_errors.sto'],[results_folder name '\output\ik_model_marker_errors.sto'])
-
-        %clear ikTool;
-
+        clear idTool;
     end
 end

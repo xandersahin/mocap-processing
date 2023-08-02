@@ -19,51 +19,61 @@
 % WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or         %
 % implied. See the License for the specific language governing            %
 % permissions and limitations under the License.                          %
-% ----------------------------------------------------------------------- %
-
-% setupAndRunIKBatchExample.m                                                 
-% Author: Edith Arnold
-
-% This example script runs multiple inverse kinematics trials for the model Subject01. 
-% All input files are in the folder ../Matlab/testData/Subject01
-% To see the results load the model and ik output in the GUI.
-clc; clear
+% ----------------------------------------------------------------------- % 
 
 % Pull in the modeling classes straight from the OpenSim distribution
 import org.opensim.modeling.*
 
-subjects = [1:10] ;
-basedir = 'W:\OA_GaitRetraining\GastrocAvoidance\DATA\' ;
-modelName = 'ArmlessRajagopal_40_abdChg_passiveCalib_KneesMoved_scaled.osim' ;
-batchIKSettingsFileName = 'W:\OA_GaitRetraining\GastrocAvoidance\OpenSim\Setup_IK_generic.xml' ;
+% subjects = {'S0977'; 'S0978'; 'S0980'; 'S0981'; 'S0985'; 'S0989'; 'S0991'; 
+%             'S0993'; 'S0995'; 'S0998'; 'S0999'; 'S1001'; 'S1002'; 'S1003';
+%             'S1004'; 'S1005'; 'S1007'; 'S1009'; 'S1011'; 'S1012'; 'S1017';
+%             'S1018'; 'S1019'; 'S1020'; 'S1022'; 'S1023'; 'S1024'; 'S1025';
+%             'S1027'; 'S1029'; 'S1033'; 'S1034'; 'S1035'; 'S1039'; 'S1040';
+%             'S1044'; 'S1047'; 'S1049'; 'S1051'; 'S1052'; 'S1053'; 'S1054'};
+
+% masses = [72.2; 105.9; 78.9; 65.0; 76.1; 73.5; 64.7; 
+%           65.8; 58.3; 52.7; 61.9; 65.8; 39.8; 65.8;
+%           59.9; 65.8; 73.1; 60.6; 65.8; 79.8; 80.6;
+%           102.3; 65.8; 47.3; 46.5; 58.7; 69.2; 70.1;
+%           49.2; 70.7; 58.8; 71.2; 70.5; 82.3; 105.8;
+%           60.2; 49.5; 66.4; 73.7; 74.0; 46.4; 65.3];
+
+
+subjects = {'S1003'};
+masses = [65.8];
+
+basedir = 'I:\Shared drives\HPL_MASPL\ProcessedData\' ;
+
+modelName = 'LaiUhlrich2022_marked.osim';
+batchScaleSettingsFileName = 'C:\MyRepositories_Xander\opencap-core_ACL\opensimPipeline\Scaling\Setup_scaling_Vicon.xml' ;
 
 for sub = 1:length(subjects)
-    subject = subjects(sub) ;
-    disp(['Analyzing Subject ' num2str(subject)])
+    subject = subjects{sub} ;
+    disp(['Analyzing Subject ' subject])
 
     % move to directory where this subject's files are kept
     % subjectdir = uigetdir('W:\OA_GaitRetraining\GastrocAvoidance\DATA\', 'Select the folder that contains the current subject data');
-    subjectdir = [basedir 'Subject' num2str(subject) '\'] ;
+    subjectdir = [basedir subject '\'] ;
 
     % Go to the folder in the subject's folder where .trc files are
-    trc_data_folder = [subjectdir '\Edited\Files_W_HJCs\'] ;
-    names = dir(fullfile(trc_data_folder, 'walking_*.trc')) ;
-    trialsForIK = {names(:).name} ;
-    nTrials = length(trialsForIK);
+    trc_data_folder = [subjectdir '\ProcessedMARKERS\'] ;
+    names = dir(fullfile(trc_data_folder, '*STATIC.trc')) ;
+    trialsForScale = {names(:).name} ;
+    nTrials = length(trialsForScale);
     
     % specify where results will be printed.
-    results_folder = ([subjectdir 'OpenSim\IK\KneesMoved\']);
+    results_folder = ([subjectdir]);
 
     % Get and operate on the files
     % Choose a generic setup file to work from
-    ikTool = InverseKinematicsTool(batchIKSettingsFileName);
+    scaleTool = ScaleTool(batchScaleSettingsFileName);
     % Get the model
     % Load the model and initialize
-    model = Model([subjectdir 'OpenSim\Models\' modelName]);
+    model = Model([basedir modelName]);
     model.initSystem();
 
     % Tell Tool to use the loaded model
-    ikTool.setModel(model);
+    % scaleTool.setModel(model);
 
     % Loop through the trials
     for trial= 1:nTrials;
@@ -75,7 +85,7 @@ for sub = 1:length(subjects)
         %ikTool.setModel(model);
 
         % Get the name of the file for this trial
-        markerFile = trialsForIK{trial};
+        markerFile = trialsForScale{trial};
 
         % Create name of trial from .trc file name
         name = markerFile(1:end-4) ;
@@ -89,28 +99,30 @@ for sub = 1:length(subjects)
         final_time = markerData.getLastFrameTime();
 
         % Setup the ikTool for this trial
-        ikTool.setName(name);
-        ikTool.setMarkerDataFileName(fullpath);
-        ikTool.setStartTime(initial_time);
-        ikTool.setEndTime(final_time);
-        ikTool.setOutputMotionFileName([results_folder name '\output\results_ik.sto']);
-        ikTool.setResultsDir([results_folder name '\output\']);
+        scaleTool.setName(name);
+        scaleTool.setMarkerDataFileName(fullpath);
+        scaleTool.setStartTime(initial_time);
+        scaleTool.setEndTime(final_time);
+        scaleTool.setSubjectMass(masses(sub));
+        
+        
+        scaleTool.createModel([results_folder ModelName '_scaled_' subject '.osim']);
 
         % Save the settings in a setup file
-        outfile = ['Setup_IK_' name '.xml'];
+        outfile = ['Setup_Scale_' name '.xml'];
         try
-            ikTool.print([results_folder name '\' outfile]);
+            scaleTool.print([results_folder name '\' outfile]);
         catch
             mkdir([results_folder name])
-            ikTool.print([results_folder name '\' outfile]);
+            scaleTool.print([results_folder name '\' outfile]);
         end
         warning off
         mkdir([results_folder name '\output\'])
         warning on
 
-        fprintf(['Performing IK on ' name '\n']);
+        fprintf(['Performing Scaling for ' name '\n']);
         % Run IK
-         ikTool.run();
+         scaleTool.run();
 
         %Give unique name to marker location .sto file (if set to 'true' in
         %setup file)
