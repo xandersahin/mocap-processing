@@ -42,9 +42,12 @@ import org.opensim.modeling.*
 subjects = {'S1003'};
 masses = [65.8];
 
-basedir = 'I:\Shared drives\HPL_MASPL\ProcessedData\' ;
+basedir = 'C:\SharedGDrive\HPL_MASPL\ProcessedData\' ;
 
-modelName = 'LaiUhlrich2022_marked.osim';
+% modelName = 'LaiUhlrich2022_marked.osim';
+modelName = 'LaiUhlrich2022.osim';
+markerSetFileName = 'C:\MyRepositories_Xander\opencap-core_ACL\opensimPipeline\Models\Vicon_markers.xml';
+
 batchScaleSettingsFileName = 'C:\MyRepositories_Xander\opencap-core_ACL\opensimPipeline\Scaling\Setup_scaling_Vicon.xml' ;
 
 for sub = 1:length(subjects)
@@ -56,7 +59,7 @@ for sub = 1:length(subjects)
     subjectdir = [basedir subject '\'] ;
 
     % Go to the folder in the subject's folder where .trc files are
-    trc_data_folder = [subjectdir '\ProcessedMARKERS\'] ;
+    trc_data_folder = [subjectdir 'ProcessedMARKERS\'] ;
     names = dir(fullfile(trc_data_folder, '*STATIC.trc')) ;
     trialsForScale = {names(:).name} ;
     nTrials = length(trialsForScale);
@@ -67,6 +70,9 @@ for sub = 1:length(subjects)
     % Get and operate on the files
     % Choose a generic setup file to work from
     scaleTool = ScaleTool(batchScaleSettingsFileName);
+    modelScaler = scaleTool.getModelScaler;
+    markerPlacer = scaleTool.getMarkerPlacer;
+    genericModelMaker = scaleTool.getGenericModelMaker;
     % Get the model
     % Load the model and initialize
     model = Model([basedir modelName]);
@@ -97,32 +103,45 @@ for sub = 1:length(subjects)
         % Get initial and final time 
         initial_time = markerData.getStartFrameTime();
         final_time = markerData.getLastFrameTime();
+        timerange = ArrayDouble(0, 2);
+        timerange.setitem(0,initial_time);
+        timerange.setitem(1,final_time);
 
-        % Setup the ikTool for this trial
-        scaleTool.setName(name);
-        scaleTool.setMarkerDataFileName(fullpath);
-        scaleTool.setStartTime(initial_time);
-        scaleTool.setEndTime(final_time);
+
+        % Setup the scaleTool for this trial
+        scaleTool.setName([modelName(1:end-5) '_' subject '.osim']);
+        modelScaler.setMarkerFileName(fullpath);
+        markerPlacer.setMarkerFileName(fullpath);
+        modelScaler.setTimeRange(timerange);
+        markerPlacer.setTimeRange(timerange);
         scaleTool.setSubjectMass(masses(sub));
-        
-        
-        scaleTool.createModel([results_folder ModelName '_scaled_' subject '.osim']);
+        genericModelMaker.setModelFileName([basedir modelName]);
+        genericModelMaker.setMarkerSetFileName(markerSetFileName);
+        modelScaler.setOutputModelFileName([results_folder modelName(1:end-5) '_' subject '.osim']);
+        markerPlacer.setOutputModelFileName([results_folder modelName(1:end-5) '_' subject '.osim']);
+        markerPlacer.setOutputMarkerFileName([results_folder subject '_markers.xml']);
+
+        % scaleTool.createModel();
+        % scaleTool.createModel([results_folder 'LaiUhlrich2022_marked_scaled_' subject '.osim']);
 
         % Save the settings in a setup file
         outfile = ['Setup_Scale_' name '.xml'];
         try
-            scaleTool.print([results_folder name '\' outfile]);
+            scaleTool.print([results_folder outfile]);
         catch
             mkdir([results_folder name])
-            scaleTool.print([results_folder name '\' outfile]);
+            scaleTool.print([results_folder outfile]);
         end
-        warning off
-        mkdir([results_folder name '\output\'])
-        warning on
+        % warning off
+        % mkdir([results_folder name '\output\'])
+        % warning on
 
         fprintf(['Performing Scaling for ' name '\n']);
-        % Run IK
-         scaleTool.run();
+        % Run ScaleTool in the command line
+        % scaleTool = ScaleTool([results_folder outfile]); 
+        % scaleTool.run()
+        myCommand = ['opensim-cmd run-tool ' results_folder outfile];
+        system(myCommand)
 
         %Give unique name to marker location .sto file (if set to 'true' in
         %setup file)

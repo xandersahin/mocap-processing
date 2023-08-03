@@ -10,7 +10,7 @@ import org.opensim.modeling.*
 %             'S1027'; 'S1029'; 'S1033'; 'S1034'; 'S1035'; 'S1039'; 'S1040';
 %             'S1044'; 'S1047'; 'S1049'; 'S1051'; 'S1052'; 'S1053'; 'S1054'};
 
-subjects = {'S1003'};
+subjects = {'S1002'};
 
 basedir = 'I:\Shared drives\HPL_MASPL\ProcessedData\' ;
 
